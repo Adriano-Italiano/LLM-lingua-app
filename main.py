@@ -10,7 +10,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# ---- Konfiguracja
+# Konfiguracja
 MODEL_DIR = os.getenv("LLM_MODEL_DIR", "/app/model")
 USE_LLMLINGUA2 = os.getenv("USE_LLMLINGUA2", "false").lower() == "true"
 
@@ -32,17 +32,17 @@ def _ensure_compressor():
                 print("✅ LLMLingua model loaded.")
 
 
-# ---- Request schemas
+# Request schemas
 class CompressRequest(BaseModel):
     text: str
-    target_tokens: int | None = 200  # używane w LLMLingua-1
-    rate: float | None = 0.6        # używane w LLMLingua-2
+    target_tokens: int | None = 200  # dla LLMLingua-1
+    rate: float | None = 0.6        # dla LLMLingua-2
 
 
-# ---- API endpoints
+# API endpoints
 @app.get("/")
 def root():
-    return {"status": "ok", "model_loaded": _compressor is not None}
+    return {"status": "ok", "model_loaded": _compressor is not None, "use_llmlingua2": USE_LLMLINGUA2}
 
 
 @app.post("/warmup")
@@ -61,26 +61,25 @@ def compress(req: CompressRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Model init failed: {e}")
 
-    # ---- LLMLingua-1 API (target_tokens)
     try:
         if not USE_LLMLINGUA2:
+            # LLMLingua-1 (target_tokens)
             result = _compressor.compress_prompt(req.text, target_token=req.target_tokens)
             if isinstance(result, dict) and "compressed_prompt" in result:
                 return {"compressed": result["compressed_prompt"]}
             return {"compressed": result}
-
-        # ---- LLMLingua-2 API (rate)
-        result = _compressor.compress_prompt_llmlingua2(
-            req.text,
-            rate=req.rate or 0.6,
-            force_tokens=["\n", ".", "!", "?", ","],
-            chunk_end_tokens=[".", "\n"],
-            return_word_label=False,
-            drop_consecutive=True,
-        )
-        if isinstance(result, dict) and "compressed_prompt" in result:
-            return {"compressed": result["compressed_prompt"]}
-        return {"compressed": result}
-
+        else:
+            # LLMLingua-2 (rate)
+            result = _compressor.compress_prompt_llmlingua2(
+                req.text,
+                rate=req.rate or 0.6,
+                force_tokens=["\n", ".", "!", "?", ","],
+                chunk_end_tokens=[".", "\n"],
+                return_word_label=False,
+                drop_consecutive=True,
+            )
+            if isinstance(result, dict) and "compressed_prompt" in result:
+                return {"compressed": result["compressed_prompt"]}
+            return {"compressed": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Compress failed: {e}")

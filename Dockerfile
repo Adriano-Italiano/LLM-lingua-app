@@ -13,12 +13,12 @@ RUN pip install --no-cache-dir huggingface_hub llmlingua uvicorn fastapi
 COPY . .
 
 # 5) Pobierz model podczas builda (OFFLINE w runtime!)
-RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='microsoft/llmlingua-2', local_dir='/app/model', local_dir_use_symlinks=False)"
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank', local_dir='/app/model', local_dir_use_symlinks=False)"
 
 # 6) Ustaw zmienne środowiskowe
 ENV PORT=8080 \
     LLM_MODEL_DIR=/app/model \
-    USE_LLMLINGUA2=false
+    USE_LLMLINGUA2=true   # bo to jest model Lingua-2
 
 # 7) Start serwera FastAPI
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

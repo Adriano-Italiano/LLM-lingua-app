@@ -2,5 +2,5 @@ fastapi
 uvicorn
 llmlingua
 huggingface_hub
-pydantic
+transformers
 
